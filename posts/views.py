@@ -1,12 +1,20 @@
 import json
+from json.decoder import JSONDecodeError
 
 from django.http.response import JsonResponse
 from django.views         import View
 from django.db.models     import Q
 
 from users.decorators import login_decorator
-from .models          import Post, Category
+from .models          import Post, Category, Saveip
 
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
 
 class PostView(View):
     @login_decorator
@@ -43,15 +51,27 @@ class PostView(View):
 
     def get(self,request,post_id):
         if not Post.objects.filter(id = post_id).exists():
-            return JsonResponse({'MESSAGE' : 'DOSE_NOT_EXIST_POST'}, status = 404)
+            return JsonResponse({'MESSAGE' : 'DOES_NOT_EXIST_POST'}, status = 404)
 
         post = Post.objects.get(id = post_id)
+
+        ip = get_client_ip(request)
+
+        if not Saveip.objects.filter(access_ip=ip, post_id=post_id).exists():
+            post.counting += 1 
+            post.save()
+            
+            Saveip.objects.create(
+                access_ip = ip,
+                post_id   = post_id
+        )
 
         result = {
                 'author'     : post.author,
                 'title'      : post.title,
                 'content'    : post.content,
-                'created_at' : post.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                'created_at' : post.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'counting'   : post.counting
         }
 
         return JsonResponse({"RESULT" : result}, status = 200)
@@ -79,7 +99,7 @@ class PostView(View):
             if Post.objects.get(id = post_id).user.id != request.user.id:
                 return JsonResponse({"MESSAGE" : "NO_PERMISSION"}, status = 401)
 
-            post = Post.objects.filter(id = post_id).update(
+            Post.objects.filter(id = post_id).update(
                 title   = title,
                 content = content
             )
@@ -114,7 +134,8 @@ class PostListView(View):
                 'title'      : post.title,
                 'content'    : post.content,
                 'category'   : post.category.name,
-                'created_at' : post.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                'created_at' : post.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'counting'   : post.counting
             }for post in posts]
             
             return JsonResponse({ "count" : count, "RESULT" : result}, status = 200)
