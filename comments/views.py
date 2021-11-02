@@ -91,7 +91,6 @@ class NestedCommentView(View):
         if not Comment.objects.filter(id=comment_id).exists():
             return JsonResponse({'MESSAGE':'DOES_NOT_EXIST_COMMENT'}, status=404)
         
-        # 대댓글에는 대댓글을 달 수 없음 (nested_comment가 null이 아닐 시 대댓글 달 수 없음)
         if not Comment.objects.filter(id=comment_id, nested_comment__isnull=True).exists():
             return JsonResponse({'MESSAGE':'DOES_NOT_LEAVE_NESTED_COMMENT'})
         
