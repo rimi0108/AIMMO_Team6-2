@@ -5,7 +5,15 @@ from django.http.response import JsonResponse
 from django.views         import View
 
 from users.decorators import login_decorator
-from .models          import Post
+from .models          import Post, Saveip
+
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
 
 class PostView(View):
     @login_decorator
@@ -41,11 +49,23 @@ class PostView(View):
 
         post = Post.objects.get(id = post_id)
 
+        ip = get_client_ip(request)
+
+        if not Saveip.objects.filter(access_ip=ip, post_id=post_id).exists():
+            post.counting += 1 
+            post.save()
+            
+            Saveip.objects.create(
+                access_ip = ip,
+                post_id   = post_id
+        )
+
         result = {
                 'author'     : post.author,
                 'title'      : post.title,
                 'content'    : post.content,
-                'created_at' : post.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                'created_at' : post.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'counting'   : post.counting
         }
 
         return JsonResponse({"RESULT" : result}, status = 200)
@@ -98,7 +118,8 @@ class PostListView(View):
                 'author'     : post.user.name,
                 'title'      : post.title,
                 'content'    : post.content,
-                'created_at' : post.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                'created_at' : post.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'counting'   : post.counting
             }for post in posts]
 
             return JsonResponse({ "count" : count, "RESULT" : result}, status = 200)
