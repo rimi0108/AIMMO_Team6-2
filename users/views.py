@@ -5,6 +5,7 @@ import bcrypt
 
 from django.http  import JsonResponse
 from django.views import View
+from django.db.models import Q
 
 from my_settings     import SECRET_KEY
 from .models         import User

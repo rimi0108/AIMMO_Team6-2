@@ -2,36 +2,42 @@ import json
 
 from django.http.response import JsonResponse
 from django.views         import View
+from django.db.models     import Q
 
 from users.decorators import login_decorator
-from .models          import Post
+from .models          import Post, Category
 
 
 class PostView(View):
     @login_decorator
     def post(self, request):
         try:
-            data    = json.loads(request.body)
-            user    = request.user
-            title   = data['title']
-            content = data['content']
+            data     = json.loads(request.body)
+            user     = request.user
+            category = Category.objects.get(name = data['category'])
+            title    = data['title']
+            content  = data['content']
 
             post = Post.objects.create(
-                author  = user.name,
-                title   = title,
-                content = content,
-                user    = user
+                author   = user.name,
+                title    = title,
+                content  = content,
+                category = category,
+                user     = user
             )
 
             result = {
                 'author'     : post.author,
                 'title'      : post.title,
                 'content'    : post.content,
+                'category'   : post.category.name,
                 'created_at' : post.created_at.strftime('%Y-%m-%d %H:%M:%S')
             }
 
             return JsonResponse({'MESSAGE' : 'SUCCESS', 'RESULT' : result},status = 201)
         
+        except ValueError:
+            return JsonResponse({'MESSAGE' : 'VALUE_ERROR'}, status = 400)
         except KeyError:
             return JsonResponse({'MESSAGE' : 'KEY_ERROR'}, status = 400)
 
@@ -88,20 +94,32 @@ class PostView(View):
 class PostListView(View):
     def get(self,request):
         try:
-            offset = int(request.GET.get('offset', 0))
-            limit  = int(request.GET.get('limit', 5))
-            
-            posts = Post.objects.all()[offset:offset+limit]
+            offset   = int(request.GET.get('offset', 0))
+            limit    = int(request.GET.get('limit', 5))
+            category = request.GET.get('category')
+            search   = request.GET.get('search', None)
+            q        = Q()
+
+            if category:
+                q &= Q(category__id = category)
+
+            if search:
+                q &= Q(title__icontains = search)
+                
+            posts = Post.objects.filter(q).select_related('category')[offset:offset+limit]
             count = len(posts)
             
             result = [{
                 'author'     : post.user.name,
                 'title'      : post.title,
                 'content'    : post.content,
+                'category'   : post.category.name,
                 'created_at' : post.created_at.strftime('%Y-%m-%d %H:%M:%S')
             }for post in posts]
-
+            
             return JsonResponse({ "count" : count, "RESULT" : result}, status = 200)
 
+        except KeyError:
+            JsonResponse({'MESSAGE' : 'KEY_ERROR'}, status = 400)
         except ValueError:
-            return JsonResponse({'MESSAGE' : 'NOT_INT'}, status = 400)
+            JsonResponse({'MESSAGE' : 'VALUE_ERROR'}, status = 400)
