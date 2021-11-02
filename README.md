@@ -18,8 +18,8 @@
 - 1000만건 이상의 데이터를 넣고 성능테스트 진행 결과 필요
 
 ## 🛠 Built With
-<img alt="Python" src ="https://img.shields.io/badge/Python-3776AB.svg?&style=for-the-badge&logo=Python&logoColor=white"/>
-<img alt="Django" src ="https://img.shields.io/badge/Django-092E20.svg?&style=for-the-badge&logo=Django&logoColor=white"/>
+
+<img alt="Python" src ="https://img.shields.io/badge/Python-3776AB.svg?&style=for-the-badge&logo=Python&logoColor=white"/> <img alt="Django" src ="https://img.shields.io/badge/Django-092E20.svg?&style=for-the-badge&logo=Django&logoColor=white"/>
 
 ## 🤔 구현한 방법과 이유에 대한 간략한 내용
 
@@ -43,6 +43,7 @@
 - 댓글 확인은 로그인을 하지 않아도 모두 불러올 수 있게끔 만들었습니다.
 - comment 테이블의 nested_comment 필드가 NULL 값이라면 메인 댓글, comment_id를 가지고 있다면 대댓글입니다.
 - 대댓글에는 대댓글을 달 수 없습니다. (nested_comment가 null이 아닐 시 대댓글 달 수 없음)
+- 댓글과 대댓글 모두 읽어올 시 pagination 구현
 
 ---
 
