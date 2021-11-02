@@ -19,12 +19,20 @@ class CommentView(View):
             if not content:
                 return JsonResponse({'MESSAGE' : 'EMPTY_CONTENT'}, status=400)
 
-            Comment.objects.create(
+            comment = Comment.objects.create(
                 user    = request.user,
                 post    = post,
                 content = content
             )
-            return JsonResponse({'MESSAGE' : 'COMMENT_CREATE'}, status=201)
+
+            result = {
+                'user'       : comment.user_id,
+                'post'       : comment.post_id,
+                'content'    : comment.content,
+                'created_at' : comment.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            }
+
+            return JsonResponse({'MESSAGE' : 'COMMENT_CREATE', 'RESULT' : result}, status=201)
         
         except KeyError:
             return JsonResponse({'MESSAGE' : 'KEY_ERROR'}, status=400)
@@ -104,12 +112,13 @@ class NestedCommentView(View):
         
         post_id = Comment.objects.get(id=comment_id).post_id
 
-        Comment.objects.create(
+        comment = Comment.objects.create(
             content            = data['content'],
             post_id            = post_id,
             nested_comment_id  = comment_id,
             user               = request.user
         )
+
         return JsonResponse({'MESSAGE':'SUCCESS'}, status=201)
     
     def get(self, request, comment_id):
