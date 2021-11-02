@@ -33,15 +33,23 @@ class CommentView(View):
             return JsonResponse({'MESSAGE' : 'JSON_DECODE_ERROR'}, status=400)
         
     def get(self, request, post_id):
-        comments = Comment.objects.filter(post_id=post_id)
+        try:
+            offset = int(request.GET.get('offset', 0))
+            limit  = int(request.GET.get('limit', 5))
 
-        result = [{
-            'user'       : comment.user.name,
-            'content'    : comment.content,
-            'created_at' : comment.created_at.strftime('%Y-%m-%d %H:%M:%S')
-        } for comment in comments]
+            comments = Comment.objects.filter(post_id=post_id)[offset:offset+limit]
+            count = len(comments)
 
-        return JsonResponse({"RESULT" : result}, status = 200)
+            result = [{
+                'user'       : comment.user.name,
+                'content'    : comment.content,
+                'created_at' : comment.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            } for comment in comments]
+
+            return JsonResponse({"count" : count, "RESULT" : result}, status = 200)
+        
+        except ValueError:
+            return JsonResponse({'MESSAGE':'NOT_INT'}, status=400)
     
     @login_decorator
     def put(self, request, post_id, comment_id):
@@ -105,15 +113,22 @@ class NestedCommentView(View):
         return JsonResponse({'MESSAGE':'SUCCESS'}, status=201)
     
     def get(self, request, comment_id):
-        comments = Comment.objects.filter(nested_comment_id=comment_id)
+        try:
+            offset = int(request.GET.get('offset', 0))
+            limit  = int(request.GET.get('limit', 5))
 
-        result = [{
-            'user'       : comment.user.name,
-            'content'    : comment.content,
-            'created_at' : comment.created_at.strftime('%Y-%m-%d %H:%M:%S')
-        } for comment in comments]
+            comments = Comment.objects.filter(nested_comment_id=comment_id)[offset:offset+limit]
+            count = len(comments)
 
-        return JsonResponse({"RESULT" : result}, status = 200)
+            result = [{
+                'user'       : comment.user.name,
+                'content'    : comment.content,
+                'created_at' : comment.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            } for comment in comments]
+
+            return JsonResponse({"count" : count, "RESULT" : result}, status = 200)
+        except ValueError:
+            return JsonResponse({"MESSAGE" : "VALUE_ERROR"}, status=400)
 
     @login_decorator
     def put(self, request, comment_id, nested_comment_id):
