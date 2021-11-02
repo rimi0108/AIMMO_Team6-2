@@ -1,5 +1,6 @@
 import json
 import bcrypt
+import requests
 
 from django.test import TestCase, Client
 

@@ -1,13 +1,15 @@
+import datetime
 import json
-import bcrypt
+import jwt
 
 from django.test import TestCase, Client
 
-from unittest.mock import MagicMock, patch
-from .models       import User
+from my_settings  import SECRET_KEY
+from users.models import User
+from .models      import Post, Category
 
 
-class SignUpTest(TestCase):
+class PostViewTest(TestCase):
     def setUp(self):
         User.objects.bulk_create(
             [
@@ -31,211 +33,300 @@ class SignUpTest(TestCase):
                 )
             ]
         )
+        self.time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    def tearDown(self):
-        User.objects.all().delete()
-
-    def test_signup_view_create_success(self):
-        user = {
-            "name"           : "wooju3",
-            "email"          : "zkzkxls123@naver.com",
-            "password"       : "wooju111!@",
-            "check_password" : "wooju111!@"
-        }
-
-        client   = Client()
-        response = client.post(
-            "/users/sign-up", json.dumps(user), content_type = "application/json"
-            )
-
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.json(), {"MESSAGE" : "SUCCESS"})
-
-    def test_signup_view_empty_value(self):
-        user = {
-            "name"           : "",
-            "email"          : "zkzkxlsnaver.com",
-            "password"       : "wooju1212!@",
-            "check_password" : "wooju1212!@"
-        }
-
-        client   = Client()
-        response = client.post(
-            "/users/sign-up", json.dumps(user), content_type = "application/json"
-        )
-        
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {"MESSAGE" : "EMPTY_VALUE"})
-
-    def test_siguup_view_invalid_email(self):
-        user = {
-            "name"           : "wooju4",
-            "email"          : "zkzkxlsnaver.com",
-            "password"       : "wooju1212!@",
-            "check_password" : "wooju1212!@"
-        }
-
-        client   = Client()
-        response = client.post(
-            "/users/sign-up", json.dumps(user), content_type = "application/json"
+        Category.objects.bulk_create(
+            [
+                Category(
+                    id   = 1,
+                    name = "잡담"
+                ),
+                Category(
+                    id   = 2,
+                    name = "파이썬"
+                ),
+                Category(
+                    id   = 3,
+                    name = "몽고DB"
+                ),
+                Category(
+                    id   = 4,
+                    name = "노드JS"
+                ),
+            ]
         )
 
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {"MESSAGE" : "EMAIL_VALIDATION"})
-
-    def test_signup_view_invalid_password(self):
-        user = {
-            "name"           : "wooju5",
-            "email"          : "zkzkxls1234@naver.com",
-            "password"       : "wooju1212",
-            "check_password" : "wooju1212!@"
-        }
-
-        client   = Client()
-        response = client.post(
-            "/users/sign-up", json.dumps(user), content_type = "application/json"
-        )
-
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {"MESSAGE" : "PASSWORD_VALIDATION"})
-
-    def test_signup_view_exist_email(self):
-        user = {
-            "name"           : "wooju7",
-            "email"          : "zkzkxls@naver.com",
-            "password"       : "wooju1212!@",
-            "check_password" : "wooju1212!@"
-        }
-
-        client   = Client()
-        response = client.post(
-            "/users/sign-up", json.dumps(user), content_type = "application/json"
-        )
-
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {"MESSAGE" : "ALREADY_EXISTED_EAMIL"})
-
-    def test_signup_view_check_password(self):
-        user = {
-            "name"           : "wooju10",
-            "email"          : "zkzkxls77@naver.com",
-            "password"       : "wooju1212!@",
-            "check_password" : "wooju1212"
-        }
-
-        client   = Client()
-        response = client.post(
-            "/users/sign-up", json.dumps(user), content_type = "application/json"
-        )
-
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {"MESSAGE" : "PASSWORD_NOT_CORRECT"})
-
-    def test_signup_view_key_error(self):
-        user = {
-            "na"             : "grg",
-            "email"          : "zkzkxls@na.com",
-            "password"       : "wooju1212!@",
-            "check_password" : "wooju1212!@"
-        }
-
-        client   = Client()
-        response = client.post(
-            "/users/sign-up", json.dumps(user), content_type = "application/json"
-        )
-
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {"MESSAGE" : "KEY_ERROR"})
-
-class SignInTest(TestCase):
-    def setUp(self):
-        password = "wooju123!!"
-        hashed_password  = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        User.objects.create(
+        Post.objects.bulk_create(
+            [
+                Post(
                     id       = 1,
-                    name     = "wooju",
-                    email    = "zkzkxls@abc.com",
-                    password = hashed_password
+                    author   = User.objects.get(id = 1).name,
+                    user     = User.objects.get(id = 1),
+                    title    = "테스트 1번", 
+                    content  = "테스트 1번 내용",
+                    category = Category.objects.get(id = 1)
+                ),
+                Post(
+                    id       = 2,
+                    author   = User.objects.get(id = 1).name,
+                    user     = User.objects.get(id = 1),
+                    title    = "테스트 2번", 
+                    content  = "테스트 2번 내용",
+                    category = Category.objects.get(id = 1)
+                ),
+                Post(
+                    id       = 3,
+                    author   = User.objects.get(id = 2).name,
+                    user     = User.objects.get(id = 2),
+                    title    = "테스트 3번", 
+                    content  = "테스트 3번 내용",
+                    category = Category.objects.get(id = 2)
+                ),
+                Post(
+                    id       = 4,
+                    author   = User.objects.get(id = 2).name,
+                    user     = User.objects.get(id = 2),
+                    title    = "테스트 4번", 
+                    content  = "테스트 4번 내용",
+                    category = Category.objects.get(id = 2)
+                ),
+                Post(
+                    id       = 5,
+                    author   = User.objects.get(id = 2).name,
+                    user     = User.objects.get(id = 2),
+                    title    = "테스트 5번", 
+                    content  = "테스트 5번 내용",
+                    category = Category.objects.get(id = 3)
+                ),
+                Post(
+                    id       = 6,
+                    author   = User.objects.get(id = 3).name,
+                    user     = User.objects.get(id = 3),
+                    title    = "테스트 6번", 
+                    content  = "테스트 6번 내용",
+                    category = Category.objects.get(id = 3)
+                ),
+                Post(
+                    id       = 7,
+                    author   = User.objects.get(id = 3).name,
+                    user     = User.objects.get(id = 3),
+                    title    = "테스트 7번", 
+                    content  = "테스트 7번 내용",
+                    category = Category.objects.get(id = 4)
                 )
+            ]
+        )
 
     def tearDown(self):
+        Post.objects.all().delete()
         User.objects.all().delete()
 
-    @patch("requests.post")
-    def test_signin_view_success(self, mocked_requests):
-        user = {
-            "email"    : "zkzkxls@abc.com",
-            "password" : "wooju123!!",
+    def test_post_view_create_success(self):
+        token = jwt.encode({'id' : 3}, SECRET_KEY, algorithm = "HS256")
+        header = {"HTTP_AUTHORIZATION" : token}
+
+        post = {
+            "author"     : User.objects.get(id = 3).name,
+            "title"      : "테스트 8번",
+            "content"    : "테스트 8번 내용",
+            "category"   : Category.objects.get(id = 4).name,
+            "created_at" : self.time,
         }
 
-        class MockedResponse:
-            def json(self):
-                return {    
-                    "MESSAGE" : "SUCCESS",
-                    'TOKEN'   :  "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6NH0.-_VJaTCP79-P4plBBkOt-TpaaVCkQeHHgSNmozV6auc"
-                }
-
         client   = Client()
-        mocked_requests.post = MagicMock(return_value = MockedResponse())
-
         response = client.post(
-            "/users/sign-in", json.dumps(user), content_type = "application/json"
+            "/post", json.dumps(post), content_type = "application/json", **header
         )
 
         self.assertEqual(response.status_code, 201)
-        
-    def test_signin_view_empty_value(self):
-        user = {
-            "email"    : "",
-            "password" : "wooju123!!",
+        self.assertEqual(response.json(), {"MESSAGE": "SUCCESS",
+        "RESULT": {
+            "author"     : "wooju2",
+            "title"      : "테스트 8번",
+            "content"    : "테스트 8번 내용",
+            "category"   : "노드JS",
+            "created_at" : self.time,
+                }
+            }
+        )
+
+    def test_post_view_key_error(self):
+        token = jwt.encode({'id' : 3}, SECRET_KEY, algorithm = "HS256")
+        header = {"HTTP_AUTHORIZATION": token}
+
+        post = {
+            "author"     : User.objects.get(id = 3).name,
+            "title"      : "테스트 8번",
         }
 
         client   = Client()
         response = client.post(
-            "/users/sign-in", json.dumps(user), content_type = "application/json"
+            "/post", json.dumps(post), content_type = "application/json", **header
         )
 
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {"MESSAGE" : "EMPTY_VALUE"})
+        self.assertEqual(response.json(), {'MESSAGE' : 'KEY_ERROR'})
 
-    def test_signin_view_not_exist_user(self):
-        user = {
-            "email"    : "zkzkxls@naver.com",
-            "password" : "wooju123!!",
+    def test_post_view_get_success(self):
+        client   = Client()
+        response = client.get("/post/1")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            {
+                "RESULT": {
+                    "author"     : "wooju0",
+                    "title"      : "테스트 1번", 
+                    "counting"   : 1,
+                    "content"    : "테스트 1번 내용",
+                    "created_at" : Post.objects.get(id = 1).created_at.strftime('%Y-%m-%d %H:%M:%S')
+                }
+            }
+        )
+    
+    def test_post_view_get_does_not_post(self):
+        client   = Client()
+        response = client.get("/post/15")
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"MESSAGE" : "DOES_NOT_EXIST_POST"})
+
+    def test_post_view_delete_success(self):
+        token  = jwt.encode({'id' : 1}, SECRET_KEY, algorithm = "HS256")
+        header = {"HTTP_AUTHORIZATION": token}
+
+        client   = Client()
+        response = client.delete("/post/1", **header)
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_post_view_delete_dose_not_post(self):
+        token  = jwt.encode({'id' : 1}, SECRET_KEY, algorithm = "HS256")
+        header = {"HTTP_AUTHORIZATION": token}
+
+        client   = Client()
+        response = client.delete("/post/77", **header)
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_view_delete_no_permission(self):
+        token  = jwt.encode({'id' : 1}, SECRET_KEY, algorithm = "HS256")
+        header = {"HTTP_AUTHORIZATION": token}
+
+        client   = Client()
+        response = client.delete("/post/5", **header)
+
+        self.assertEqual(response.status_code, 403)
+
+    def test_post_view_put_success(self):
+        token = jwt.encode({'id' : 1}, SECRET_KEY, algorithm = "HS256")
+        header = {"HTTP_AUTHORIZATION" : token}
+
+        post = {
+            "title"   : "수정 1번",
+            "content" : "수정 1번 내용"
         }
 
         client   = Client()
-        response = client.post(
-            "/users/sign-in", json.dumps(user), content_type = "application/json"
+        response = client.put(
+            "/post/1", json.dumps(post), content_type = "application/json", **header
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json(), {"MESSAGE": "SUCCESS"})
+
+    def test_post_view_put_dose_not_exist_post(self):
+        token = jwt.encode({'id' : 1}, SECRET_KEY, algorithm = "HS256")
+        header = {"HTTP_AUTHORIZATION" : token}
+
+        post = {
+            "title"   : "수정 1번",
+            "content" : "수정 1번 내용"
+        }
+
+        client   = Client()
+        response = client.put(
+            "/post/25", json.dumps(post), content_type = "application/json", **header
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json(), {"MESSAGE" : "DOSE_NOT_EXIST_POST"})
+
+    def test_post_view_put_no_permission(self):
+        token = jwt.encode({'id' : 1}, SECRET_KEY, algorithm = "HS256")
+        header = {"HTTP_AUTHORIZATION" : token}
+
+        post = {
+            "title"   : "수정 1번",
+            "content" : "수정 1번 내용"
+        }
+
+        client   = Client()
+        response = client.put(
+            "/post/5", json.dumps(post), content_type = "application/json", **header
         )
 
         self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.json(), {"MESSAGE" : "USER_DOES_NOT_EXIST"})
+        self.assertEqual(response.json(), {"MESSAGE" : "NO_PERMISSION"})
 
-    def test_signin_view_invalid_password(self):
-        user = {
-            "email"    : "zkzkxls@abc.com",
-            "password" : "wooju123@",
+    def test_post_view_put_key_error(self):
+        token = jwt.encode({'id' : 1}, SECRET_KEY, algorithm = "HS256")
+        header = {"HTTP_AUTHORIZATION" : token}
+
+        post = {
+            "ti"      : "수정 1번",
+            "content" : "수정 1번 내용"
         }
 
         client   = Client()
-        response = client.post(
-            "/users/sign-in", json.dumps(user), content_type = "application/json"
-        )
-
-        self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.json(), {"MESSAGE" : "INVALID_PASSWORD"})
-
-    def test_signin_view_key_error(self):
-        user = {
-            "ema"      : "zkzkxls@abc.com",
-            "password" : "wooju123@",
-        }
-
-        client   = Client()
-        response = client.post(
-            "/users/sign-in", json.dumps(user), content_type = "application/json"
+        response = client.put(
+            "/post/1", json.dumps(post), content_type = "application/json", **header
         )
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {"MESSAGE" : "KEY_ERROR"})
+
+    def test_postlist_view_get_list_success(self):
+        client = Client()
+        response = client.get("/post/list?offset=0&limit=5")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            {
+                "count": 5,
+                "RESULT": [
+                    {
+                        "author"     : "wooju0",
+                        "title"      : "테스트 1번",
+                        "content"    : "테스트 1번 내용",
+                        "created_at" : Post.objects.get(id = 1).created_at.strftime('%Y-%m-%d %H:%M:%S')
+                    },
+                    {
+                        "author"     : "wooju0",
+                        "title"      : "테스트 2번",
+                        "content"    : "테스트 2번 내용",
+                        "created_at" : Post.objects.get(id = 2).created_at.strftime('%Y-%m-%d %H:%M:%S')
+                    },
+                    {
+                        "author"     : "wooju1",
+                        "title"      : "테스트 3번",
+                        "content"    : "테스트 3번 내용",
+                        "created_at" : Post.objects.get(id = 3).created_at.strftime('%Y-%m-%d %H:%M:%S')
+                    },
+                    {
+                        "author"     : "wooju1",
+                        "title"      : "테스트 4번",
+                        "content"    : "테스트 4번 내용",
+                        "created_at" : Post.objects.get(id = 4).created_at.strftime('%Y-%m-%d %H:%M:%S')
+                    },
+                    {
+                        "author"     : "wooju1",
+                        "title"      : "테스트 5번",
+                        "content"    : "테스트 5번 내용",
+                        "created_at" : Post.objects.get(id = 5).created_at.strftime('%Y-%m-%d %H:%M:%S')
+                    }
+                ]
+            }
+        )

@@ -79,7 +79,7 @@ class PostView(View):
     @login_decorator
     def delete(self, request, post_id):
         if not Post.objects.filter(id = post_id).exists():
-            return JsonResponse({"MESSAGE" : "DOSE_NOT_EXIST_POST"}, status = 404)
+            return JsonResponse({"MESSAGE" : "DOES_NOT_EXIST_POST"}, status = 404)
         if Post.objects.get(id = post_id).user.id != request.user.id:
             return JsonResponse({"MESSAGE" : "NO_PERMISSION"}, status = 403)
 
