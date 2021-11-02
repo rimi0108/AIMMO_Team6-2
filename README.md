@@ -60,6 +60,9 @@
 - python manage.py runserver 입력
 - endpoint 호출 및 실행
 
+### Postman api document
+📎 https://documenter.getpostman.com/view/16843855/UVBzn9bA
+
 ### ENDPOINT
 
 | Method | EndpointURL                               | Request Body                          | Remark                  |
