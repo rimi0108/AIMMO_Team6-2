@@ -1,11 +1,11 @@
 import json
+from json.decoder import JSONDecodeError
 
 from django.http.response import JsonResponse
 from django.views         import View
 
 from users.decorators import login_decorator
 from .models          import Post
-
 
 class PostView(View):
     @login_decorator
@@ -37,7 +37,7 @@ class PostView(View):
 
     def get(self,request,post_id):
         if not Post.objects.filter(id = post_id).exists():
-            return JsonResponse({'MESSAGE' : 'DOSE_NOT_EXIST_POST'}, status = 404)
+            return JsonResponse({'MESSAGE' : 'DOES_NOT_EXIST_POST'}, status = 404)
 
         post = Post.objects.get(id = post_id)
 
@@ -73,7 +73,7 @@ class PostView(View):
             if Post.objects.get(id = post_id).user.id != request.user.id:
                 return JsonResponse({"MESSAGE" : "NO_PERMISSION"}, status = 401)
 
-            post = Post.objects.filter(id = post_id).update(
+            Post.objects.filter(id = post_id).update(
                 title   = title,
                 content = content
             )
