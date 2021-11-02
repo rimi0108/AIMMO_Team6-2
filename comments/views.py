@@ -123,7 +123,7 @@ class NestedCommentView(View):
 
             if not Comment.objects.filter(id=nested_comment_id, nested_comment_id=comment_id).exists():
                 return JsonResponse({"MESSAGE" : "DOES_NOT_EXIST_NESTED_COMMENT"}, status = 404)
-           
+
             if Comment.objects.get(id=nested_comment_id, nested_comment_id=comment_id).user.id != request.user.id:
                 return JsonResponse({"MESSAGE" : "NO_PERMISSION"}, status = 401)
 
