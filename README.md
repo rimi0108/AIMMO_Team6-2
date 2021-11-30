@@ -6,6 +6,10 @@
 
 
 ## ⭐ Basic Requirements
+
+<details>
+    <summary>내용 보기</summary>
+    
 - 원티드 지원 과제 내용 포함 
     - 유저 회원가입, 로그인
     - 게시글 CRUD
@@ -18,6 +22,8 @@
 - Rest API 설계
 - Unit Test 
 - 1000만건 이상의 데이터를 넣고 성능테스트 진행 결과 필요
+    
+</details>
 
 ## 🛠 Built With
 
